@@ -1,5 +1,4 @@
-#ifndef SERIAL_H
-#define SERIAL_H
+#pragma once
 
 #include <qglobal.h>
 #define  BUFSIZE   1024
@@ -16,4 +15,3 @@ typedef struct
     qint16 num1; //记录buf数量
     qint16 num2;
 }buf_t;
-#endif // SERIAL_H

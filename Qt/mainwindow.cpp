@@ -3,11 +3,16 @@
 
 #include <QtWidgets>
 #include <QMessageBox>
-#include <sys/time.h>
+#include <ctime>
 #include <QSerialPortInfo>
+
+#if Q_OS_WIN
 #include<windows.h>
+#endif // Q_OS_WIN
+
 #define TARGET_NAME   "LoRaDevKitTools "
 #define VER           "V1.0.0 "
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
@@ -23,10 +28,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->statusBar->addWidget(m_status);
     /*设置ACSII按钮为单选状态*/
-    QButtonGroup *read_pButtonGroup = new QButtonGroup(this);
+    auto *read_pButtonGroup = new QButtonGroup(this);
     read_pButtonGroup->addButton(ui->read_ASCII);
     read_pButtonGroup->addButton(ui->read_Hex);
-    QButtonGroup *write_pButtonGroup = new QButtonGroup(this);
+    auto *write_pButtonGroup = new QButtonGroup(this);
     write_pButtonGroup->addButton(ui->send_ASCII);
     write_pButtonGroup->addButton(ui->send_Hex);
     ui->read_ASCII->setChecked(true);
@@ -132,7 +137,7 @@ void MainWindow::on_Button_clear_com_clicked(bool checked)
 void MainWindow::readData()
 {
     uart_buffer.append(lora_serial->readAll());
-    if(uart_buffer[0]==0xEA && uart_buffer[1]==0xEB)
+    if(0xEA == uart_buffer[0] && 0xEB == uart_buffer[1])
     {
         //pos=Find_EaEb(uart_buffer);
         memcpy(&host_data,uart_buffer.data(),HOST_NUM);
@@ -188,41 +193,41 @@ void MainWindow::InitCombobox()
     ui->comboBox_mode->addItems(mode_list);
 }
 
-void MainWindow::Par2Com(host_t &host_data)
+void MainWindow::Par2Com(host_t &hostData)
 {
     FQV_t fqv;
-    //ui->comboBox_freq->setCurrentIndex(host_data.cfg[0]);
-    ui->comboBox_power->setCurrentIndex(host_data.cfg[1]-14);
-    ui->comboBox_BW->setCurrentIndex(host_data.cfg[2]);
-    ui->comboBox_SF->setCurrentIndex(host_data.cfg[3]-7);
-    ui->comboBox_CR->setCurrentIndex(host_data.cfg[4]-1);
-    ui->comboBox_mode->setCurrentIndex(host_data.cfg[5]);
-    fqv.Fqv_8[3]=host_data.cfg[6];
-    fqv.Fqv_8[2]=host_data.cfg[7];
-    fqv.Fqv_8[1]=host_data.cfg[8];
-    fqv.Fqv_8[0]=host_data.cfg[9];
+    //ui->comboBox_freq->setCurrentIndex(hostData.cfg[0]);
+    ui->comboBox_power->setCurrentIndex(hostData.cfg[1]-14);
+    ui->comboBox_BW->setCurrentIndex(hostData.cfg[2]);
+    ui->comboBox_SF->setCurrentIndex(hostData.cfg[3]-7);
+    ui->comboBox_CR->setCurrentIndex(hostData.cfg[4]-1);
+    ui->comboBox_mode->setCurrentIndex(hostData.cfg[5]);
+    fqv.Fqv_8[3]=hostData.cfg[6];
+    fqv.Fqv_8[2]=hostData.cfg[7];
+    fqv.Fqv_8[1]=hostData.cfg[8];
+    fqv.Fqv_8[0]=hostData.cfg[9];
     ui->lineEdit_freq->setText(QString::number(fqv.Fqv_32));
-    ui->lineEdit_time->setText(QString::number(host_data.time));
-    ui->lineEdit_data->setText(QString("%1").arg((char*)&host_data.data));
+    ui->lineEdit_time->setText(QString::number(hostData.time));
+    ui->lineEdit_data->setText(QString("%1").arg((char*)&hostData.data));
 
 }
 
-bool MainWindow::Com2Par(host_t &host_data)
+bool MainWindow::Com2Par(host_t &hostData)
 {
     bool ok;
 
-    host_data.cfg[1]= ui->comboBox_power->currentIndex()+14;
-    host_data.cfg[2]= ui->comboBox_BW->currentIndex();
-    host_data.cfg[3]= ui->comboBox_SF->currentIndex()+7;
-    host_data.cfg[4]= ui->comboBox_CR->currentIndex()+1;
-    host_data.cfg[5]= ui->comboBox_mode->currentIndex();
+  hostData.cfg[1]= ui->comboBox_power->currentIndex()+14;
+  hostData.cfg[2]= ui->comboBox_BW->currentIndex();
+  hostData.cfg[3]= ui->comboBox_SF->currentIndex()+7;
+  hostData.cfg[4]= ui->comboBox_CR->currentIndex()+1;
+  hostData.cfg[5]= ui->comboBox_mode->currentIndex();
 
     QString frq=ui->lineEdit_freq->text();
     if(frq.isEmpty() || !isDigitString(frq) || frq.length()!=9)// 为空 或 不是数字 或 位数不为9
     {
         QMessageBox::warning(this,tr("错误"),tr("频率格式错误"),
                              QMessageBox::Ok);
-        return 0;
+        return false;
     }
 
     QString times=ui->lineEdit_time->text();
@@ -230,13 +235,13 @@ bool MainWindow::Com2Par(host_t &host_data)
     {
         QMessageBox::warning(this,tr("错误"),tr("时间格式错误"),
                              QMessageBox::Ok);
-        return 0;
+        return false;
     }
     if(times.isEmpty())
     {
-       host_data.time=0;
+      hostData.time=0;
     }else{
-       host_data.time=ui->lineEdit_time->text().toInt(&ok);
+      hostData.time=ui->lineEdit_time->text().toInt(&ok);
     }
 
     QString s= ui->lineEdit_data->text();
@@ -244,11 +249,11 @@ bool MainWindow::Com2Par(host_t &host_data)
     {
         QMessageBox::warning(this,tr("错误"),tr("数据长度不得大于20字节"),
                              QMessageBox::Ok);
-        return 0;
+        return false;
     }
 
-    strcpy((char*)&host_data.data,s.toLatin1().data());
-    return 1;
+    strcpy((char*)&hostData.data, s.toLatin1().data());
+    return true;
 }
 
 void MainWindow::on_send_Button_clicked()
@@ -331,7 +336,7 @@ int MainWindow::Find_EaEb(QByteArray src)
     int pos=0;
     for(int i=0;i<src.size()-2;i++)
     {
-        if(src[i]==0xEA && src[i+1]==0xEB)
+        if(0xEA == src[i] && 0xEB == src[i+1])
         {
             return pos;
         }
