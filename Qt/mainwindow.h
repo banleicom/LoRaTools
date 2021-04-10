@@ -1,14 +1,14 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#pragma once
 
 #include <QMainWindow>
 #include <QSerialPort>
 //#include "serialthread.h"
+
 class QLabel;
 
 #define SREG_USE        10     // 已使用的S寄存器数量
 #define SREG_MAX_NUM    15    // 总的S寄存器数量
-#define HOST_NUM        SREG_MAX_NUM+26
+#define HOST_NUM        (SREG_MAX_NUM + 26)
 
 #pragma pack (push, 1)
 typedef struct
@@ -35,9 +35,9 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = Q_NULLPTR);
+    ~MainWindow() override;
 
-    ~MainWindow();
 private:
     void writeData(const QByteArray &data);
 
@@ -47,23 +47,14 @@ private slots:
     void on_send_Button_clicked();
     void readData();
     void on_clear_Button_clicked();
-
     void on_pushButton_read_clicked();
-
     void on_pushButton_write_clicked();
-
     void on_pushButton_flash_clicked();
-
     void on_pushButton_Factory_clicked();
-
     void on_pushButton_MCU_clicked();
-
     void on_pushButton_INF_clicked();
-
     void on_pushButton_help_clicked();
-
     void on_pushButton_About_clicked();
-
     void on_pushButton_Rssi_clicked();
 
 private:
@@ -72,17 +63,15 @@ private:
     void Par2Com(host_t &);
     bool Com2Par(host_t &);
 
-    Ui::MainWindow *ui;
-    QLabel *m_status = nullptr;
-    QSerialPort *lora_serial = nullptr;
+    Ui::MainWindow *ui = Q_NULLPTR;
+    QLabel *m_status = Q_NULLPTR;
+    QSerialPort *lora_serial = Q_NULLPTR;
     QByteArray uart_buffer;
-    host_t host_data;
+    host_t host_data{};
+
 protected:
     void String2Hex(QString str, QByteArray &senddata);
     char ConvertHexChar(char ch);
-    int Find_EaEb(QByteArray src);
-    bool isDigitString(const QString& src);
-
+    static int Find_EaEb(QByteArray src);
+    static bool isDigitString(const QString& src);
 };
-
-#endif // MAINWINDOW_H
